@@ -22,6 +22,8 @@ class Command(BaseCommand):
         try:
             Admin.objects.create(username=username, api_key_hash=make_password(key))
         except IntegrityError as error:
-            raise CommandError("An administrator with this username already exists.") from error
+            raise CommandError(
+                "An administrator with this username already exists."
+            ) from error
 
         self.stdout.write(key)

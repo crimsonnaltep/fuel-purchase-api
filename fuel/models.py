@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.core.validators import MinValueValidator, RegexValidator
+from django.conf import settings
 from django.db import models
 
 
@@ -15,18 +16,33 @@ class Product(models.Model):
 
     class Meta:
         constraints = [
-            models.CheckConstraint(condition=models.Q(price_per_litre__gte=0), name="product_price_nonnegative"),
-            models.CheckConstraint(condition=models.Q(available_litres__gte=0), name="product_stock_nonnegative"),
+            models.CheckConstraint(
+                condition=models.Q(price_per_litre__gte=0),
+                name="product_price_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(available_litres__gte=0),
+                name="product_stock_nonnegative",
+            ),
         ]
 
 
 class User(models.Model):
+    account = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="fuel_profile",
+        null=True,
+        blank=True,
+    )
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     username = models.CharField(
         max_length=150,
         unique=True,
-        validators=[RegexValidator(r"\A[a-zA-Z0-9]+\Z", "Use only Latin letters and digits.")],
+        validators=[
+            RegexValidator(r"\A[a-zA-Z0-9]+\Z", "Use only Latin letters and digits.")
+        ],
     )
     birthdate = models.DateField()
     account_balance = models.DecimalField(
@@ -38,7 +54,10 @@ class User(models.Model):
 
     class Meta:
         constraints = [
-            models.CheckConstraint(condition=models.Q(account_balance__gte=0), name="user_balance_nonnegative"),
+            models.CheckConstraint(
+                condition=models.Q(account_balance__gte=0),
+                name="user_balance_nonnegative",
+            ),
         ]
 
 
@@ -57,6 +76,11 @@ class Purchase(models.Model):
     class Meta:
         ordering = ["-created_at", "-id"]
         constraints = [
-            models.CheckConstraint(condition=models.Q(litres__gt=0), name="purchase_litres_positive"),
-            models.CheckConstraint(condition=models.Q(total_price__gte=0), name="purchase_total_nonnegative"),
+            models.CheckConstraint(
+                condition=models.Q(litres__gt=0), name="purchase_litres_positive"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(total_price__gte=0),
+                name="purchase_total_nonnegative",
+            ),
         ]

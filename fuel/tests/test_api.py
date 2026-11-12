@@ -2,10 +2,11 @@ from decimal import Decimal
 from io import StringIO
 
 from django.contrib.auth.hashers import check_password
+from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from rest_framework.test import APITestCase
 
-from .models import Admin, Product, Purchase, User
+from fuel.models import Admin, Product, Purchase, User
 
 
 class AdminAPITests(APITestCase):
@@ -30,20 +31,42 @@ class AdminAPITests(APITestCase):
         stored_hash = Admin.objects.get(username="operator").api_key_hash
         self.assertNotEqual(stored_hash, self.key)
         self.assertTrue(check_password(self.key, stored_hash))
-        for headers in ({}, {"HTTP_X_USERNAME": "john"}, {"HTTP_X_ADMIN_KEY": "invalid"}):
+        for headers in (
+            {},
+            {"HTTP_X_USERNAME": "john"},
+            {"HTTP_X_ADMIN_KEY": "invalid"},
+        ):
             with self.subTest(headers=headers):
-                self.assertEqual(self.client.post("/api/admin/products/", self.product, **headers).status_code, 403)
-                self.assertEqual(self.client.patch("/api/admin/users/1/", {}, **headers).status_code, 403)
+                self.assertEqual(
+                    self.client.post(
+                        "/api/admin/products/", self.product, **headers
+                    ).status_code,
+                    403,
+                )
+                self.assertEqual(
+                    self.client.patch("/api/admin/users/1/", {}, **headers).status_code,
+                    403,
+                )
 
     def test_create_and_update_product(self):
         url = "/api/admin/products/"
         response = self.client.post(url, self.product, **self.headers)
         self.assertEqual(response.status_code, 201)
         detail = f"{url}{response.data['id']}/"
-        self.assertEqual(self.client.patch(detail, {"available_litres": "25.50"}, **self.headers).status_code, 200)
+        self.assertEqual(
+            self.client.patch(
+                detail, {"available_litres": "25.50"}, **self.headers
+            ).status_code,
+            200,
+        )
         for field in ("available_litres", "price_per_litre"):
             with self.subTest(field=field):
-                self.assertEqual(self.client.patch(detail, {field: "-0.01"}, **self.headers).status_code, 400)
+                self.assertEqual(
+                    self.client.patch(
+                        detail, {field: "-0.01"}, **self.headers
+                    ).status_code,
+                    400,
+                )
         self.assertEqual(Product.objects.get().available_litres, Decimal("25.50"))
 
     def test_create_and_update_user(self):
@@ -51,11 +74,28 @@ class AdminAPITests(APITestCase):
         response = self.client.post(url, self.user, **self.headers)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data["account_balance"], "0.00")
-        self.assertEqual(self.client.post(url, self.user, **self.headers).status_code, 400)
-        self.assertEqual(self.client.post(url, {**self.user, "username": "тест"}, **self.headers).status_code, 400)
+        self.assertEqual(
+            self.client.post(url, self.user, **self.headers).status_code, 400
+        )
+        self.assertEqual(
+            self.client.post(
+                url, {**self.user, "username": "тест"}, **self.headers
+            ).status_code,
+            400,
+        )
         detail = f"{url}{response.data['id']}/"
-        self.assertEqual(self.client.patch(detail, {"account_balance": "100.25"}, **self.headers).status_code, 200)
-        self.assertEqual(self.client.patch(detail, {"account_balance": "-0.01"}, **self.headers).status_code, 400)
+        self.assertEqual(
+            self.client.patch(
+                detail, {"account_balance": "100.25"}, **self.headers
+            ).status_code,
+            200,
+        )
+        self.assertEqual(
+            self.client.patch(
+                detail, {"account_balance": "-0.01"}, **self.headers
+            ).status_code,
+            400,
+        )
         self.assertEqual(User.objects.get().account_balance, Decimal("100.25"))
 
 
@@ -64,17 +104,31 @@ class PurchaseAPITests(APITestCase):
 
     def setUp(self):
         self.user = User.objects.create(
-            username="john", first_name="John", last_name="Smith",
-            birthdate="1995-05-20", account_balance=Decimal("10000.00"),
+            username="john",
+            first_name="John",
+            last_name="Smith",
+            birthdate="1995-05-20",
+            account_balance=Decimal("10000.00"),
         )
+        account = get_user_model().objects.create_user(
+            username="john", password="TestSecret!12345"
+        )
+        self.user.account = account
+        self.user.save(update_fields=["account"])
+        self.client.force_login(account)
         self.product = Product.objects.create(
-            name="Petrol 95", price_per_litre=Decimal("500.00"), available_litres=Decimal("1000.00"),
+            name="Petrol 95",
+            price_per_litre=Decimal("500.00"),
+            available_litres=Decimal("1000.00"),
         )
 
     def buy(self, litres, product_id=None):
         return self.client.post(
             self.url,
-            {"product_id": product_id if product_id is not None else self.product.pk, "litres": litres},
+            {
+                "product_id": product_id if product_id is not None else self.product.pk,
+                "litres": litres,
+            },
             format="json",
             HTTP_X_USERNAME=self.user.username,
         )
@@ -96,8 +150,18 @@ class PurchaseAPITests(APITestCase):
         self.assertEqual(history.data[0]["id"], response.data["id"])
         self.assertIn("created_at", history.data[0])
 
-        User.objects.create(username="jane", first_name="Jane", last_name="Smith", birthdate="1995-05-20")
-        self.assertEqual(self.client.get(self.url, HTTP_X_USERNAME="jane").data, [])
+        User.objects.create(
+            username="jane",
+            first_name="Jane",
+            last_name="Smith",
+            birthdate="1995-05-20",
+        )
+        jane = get_user_model().objects.create_user(
+            username="jane", password="TestSecret!12345"
+        )
+        User.objects.filter(username="jane").update(account=jane)
+        self.client.force_login(jane)
+        self.assertEqual(self.client.get(self.url, HTTP_X_USERNAME="john").data, [])
 
     def test_invalid_purchases_leave_database_unchanged(self):
         cases = [
@@ -120,6 +184,9 @@ class PurchaseAPITests(APITestCase):
                 self.assertEqual(self.product.available_litres, Decimal("1000.00"))
                 self.assertFalse(Purchase.objects.exists())
 
-    def test_username_header_is_required(self):
-        self.assertEqual(self.client.get(self.url).status_code, 400)
-        self.assertEqual(self.client.get(self.url, HTTP_X_USERNAME="unknown").status_code, 404)
+    def test_session_is_required(self):
+        self.client.logout()
+        self.assertEqual(self.client.get(self.url).status_code, 401)
+        self.assertEqual(
+            self.client.get(self.url, HTTP_X_USERNAME="john").status_code, 401
+        )

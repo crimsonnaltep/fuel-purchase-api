@@ -1,12 +1,12 @@
 services:
-  api:
+  web:
     build: .
     ports:
       - "127.0.0.1:8000:8000"
     environment:
-      FUEL_DB_PATH: /data/db.sqlite3
+      FUEL_DATA_DIR: /data
     volumes:
-      - fuel-data:/data
+      - fuel-web-data:/data
 
 volumes:
-  fuel-data:
+  fuel-web-data:
