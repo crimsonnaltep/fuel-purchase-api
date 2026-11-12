@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+    <section class="login-story">
+        <a class="brand" href="{{ url('login') }}">
+            <span class="mark">F</span> Fuel Desk</a>
+        <div>
+            <div class="eyebrow">FUEL. BALANCE. CONTROL.</div>
+            <h1>
+                Fuel operations.
+                <br>
+                Made simple.
+                <br>
+                <em>All in one place.</em>
+            </h1>
+            <p>
+                Track stock, manage balances
+                <br>
+                and review every purchase.
+            </p>
+        </div>
+        <small>FUEL DESK / CUSTOMER PORTAL</small>
+    </section>
+    <section class="login-panel">
+        <div class="login-card">
+            <div class="eyebrow">WELCOME BACK</div>
+            <h2>Sign in to your account</h2>
+            <p class="muted">Use the username and password provided by your administrator.</p>
+            <form method="post">
+                {{ csrf_input }}
+                {% if form.errors %}
+                    <div class="error">Sign-in failed. Check your username and password.</div>
+                {% endif %}
+                <label for="id_username">Username</label>
+                <input id="id_username"
+                       name="username"
+                       value="{{ form.username.value() or '' }}"
+                       autocomplete="username"
+                       required
+                       autofocus>
+                <label for="id_password">Password</label>
+                <input id="id_password"
+                       name="password"
+                       type="password"
+                       autocomplete="current-password"
+                       required>
+                <button class="button wide">Sign in →</button>
+            </form>
+        </div>
+    </section>
+{% endblock %}

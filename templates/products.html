@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+    <header class="page-head">
+        <div>
+            <div class="eyebrow">CATALOGUE</div>
+            <h1>Fuel</h1>
+            <p class="muted">Current prices and available quantities.</p>
+        </div>
+        {% if request.user.is_staff %}
+            <a class="button" href="{{ url('product-new') }}">+ Add fuel</a>
+        {% endif %}
+    </header>
+    <section class="product-grid">
+        {% for product in products %}
+            <article class="product-card">
+                <div class="product-top">
+                    <span class="fuel-icon">↗</span>
+                </div>
+                <h2>{{ product.name }}</h2>
+                <div class="price">
+                    {{ "%.2f"|format(product.price_per_litre) }} <span>/ litre</span>
+                </div>
+                <div class="stock">
+                    <span>Available stock</span>
+                    <strong>{{ "%.2f"|format(product.available_litres) }} L</strong>
+                </div>
+                {% if request.user.is_staff %}
+                    <a class="button secondary wide"
+                       href="{{ url('product-edit', args=[product.pk]) }}">Edit</a>
+                {% else %}
+                    <a class="button wide" href="{{ url('buy', args=[product.pk]) }}">Buy fuel →</a>
+                {% endif %}
+            </article>
+        {% else %}
+            <div class="panel empty">No fuel products yet.</div>
+        {% endfor %}
+    </section>
+{% endblock %}

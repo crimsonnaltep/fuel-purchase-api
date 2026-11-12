@@ -9,3 +9,5 @@ __pycache__/
 .env.*
 !.env.example
 .DS_Store
+.secret_key
+staticfiles/

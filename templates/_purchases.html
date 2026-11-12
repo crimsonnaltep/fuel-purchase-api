@@ -1,0 +1,36 @@
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Purchase</th>
+                {% if request.user.is_staff %}
+                    <th>User</th>
+                {% endif %}
+                <th>Fuel</th>
+                <th class="numeric">Litres</th>
+                <th class="numeric">Total</th>
+                <th>Date · UTC</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in purchases %}
+                <tr>
+                    <td class="muted">#{{ item.pk }}</td>
+                    {% if request.user.is_staff %}
+                        <td>{{ item.user.username }}</td>
+                    {% endif %}
+                    <td>
+                        <strong>{{ item.product.name }}</strong>
+                    </td>
+                    <td class="numeric">{{ "%.2f"|format(item.litres) }}</td>
+                    <td class="numeric">{{ "%.2f"|format(item.total_price) }}</td>
+                    <td class="muted">{{ item.created_at.strftime("%d.%m.%Y · %H:%M") }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" class="empty">No purchases yet. Completed transactions will appear here.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

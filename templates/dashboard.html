@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+    <header class="page-head">
+        <div>
+            <div class="eyebrow">YOUR WORKSPACE</div>
+            <h1>Everything at a glance.</h1>
+            <p class="muted">Balances, stock and recent activity.</p>
+        </div>
+        <span class="badge">● {{ 'Management' if request.user.is_staff else 'My account' }}</span>
+    </header>
+    <section class="stats">
+        {% if request.user.is_staff %}
+            <article>
+                <span>Users</span>
+                <strong>{{ user_count }}</strong>
+                <small>Customer accounts</small>
+            </article>
+            <article>
+                <span>Total fuel stock</span>
+                <strong>{{ "%.2f"|format(stock) }} <i>L</i>
+                </strong>
+                <small>Available to purchase</small>
+            </article>
+        {% else %}
+            <article class="featured">
+                <span>Your balance</span>
+                <strong>{{ "%.2f"|format(profile.account_balance if profile else 0) }}</strong>
+                <small>Available to spend on fuel</small>
+            </article>
+            <article>
+                <span>Total spent</span>
+                <strong>{{ "%.2f"|format(spent) }}</strong>
+                <small>All time</small>
+            </article>
+        {% endif %}
+        <article>
+            <span>{{ 'All purchases' if request.user.is_staff else 'Your purchases' }}</span>
+            <strong>{{ purchase_count }}</strong>
+            <small>Completed transactions</small>
+        </article>
+    </section>
+    <section class="section-head">
+        <div>
+            <h2>Recent purchases</h2>
+            <p class="muted">Your six most recent transactions</p>
+        </div>
+        <a class="text-link" href="{{ url('history') }}">View all ↗</a>
+    </section>
+    <section class="panel">
+        {% include "_purchases.html" %}
+    </section>
+    <section class="callout">
+        <div>
+            <h2>{{ 'Manage your fuel catalogue' if request.user.is_staff else 'Ready to fuel up?' }}</h2>
+            <p>{{ 'Update fuel prices and stock levels.' if request.user.is_staff else 'Choose your fuel and the quantity you need.' }}</p>
+        </div>
+        <a class="button" href="{{ url('products') }}">Browse fuel →</a>
+    </section>
+{% endblock %}
